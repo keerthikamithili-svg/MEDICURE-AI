@@ -1,0 +1,6 @@
+{
+  "name": "MediCure",
+  "description": "Multi-portal clinical healthcare platform for patients, physicians, front desk, and hospital administration.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

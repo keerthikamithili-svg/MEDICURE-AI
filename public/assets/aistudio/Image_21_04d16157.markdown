@@ -1,0 +1,236 @@
+---
+name: Clinical Precision
+colors:
+  surface: '#f8f9ff'
+  surface-dim: '#cbdbf5'
+  surface-bright: '#f8f9ff'
+  surface-container-lowest: '#ffffff'
+  surface-container-low: '#eff4ff'
+  surface-container: '#e5eeff'
+  surface-container-high: '#dce9ff'
+  surface-container-highest: '#d3e4fe'
+  on-surface: '#0b1c30'
+  on-surface-variant: '#42474e'
+  inverse-surface: '#213145'
+  inverse-on-surface: '#eaf1ff'
+  outline: '#73777f'
+  outline-variant: '#c2c7cf'
+  surface-tint: '#3d6185'
+  primary: '#002541'
+  on-primary: '#ffffff'
+  primary-container: '#123b5d'
+  on-primary-container: '#82a5cd'
+  inverse-primary: '#a6caf3'
+  secondary: '#006b5f'
+  on-secondary: '#ffffff'
+  secondary-container: '#6df5e1'
+  on-secondary-container: '#006f64'
+  tertiary: '#00263d'
+  on-tertiary: '#ffffff'
+  tertiary-container: '#003c5e'
+  on-tertiary-container: '#49a9ef'
+  error: '#ba1a1a'
+  on-error: '#ffffff'
+  error-container: '#ffdad6'
+  on-error-container: '#93000a'
+  primary-fixed: '#d0e4ff'
+  primary-fixed-dim: '#a6caf3'
+  on-primary-fixed: '#001d34'
+  on-primary-fixed-variant: '#24496c'
+  secondary-fixed: '#71f8e4'
+  secondary-fixed-dim: '#4fdbc8'
+  on-secondary-fixed: '#00201c'
+  on-secondary-fixed-variant: '#005048'
+  tertiary-fixed: '#cce5ff'
+  tertiary-fixed-dim: '#93ccff'
+  on-tertiary-fixed: '#001d31'
+  on-tertiary-fixed-variant: '#004b73'
+  background: '#f8f9ff'
+  on-background: '#0b1c30'
+  surface-variant: '#d3e4fe'
+typography:
+  display-hero:
+    fontFamily: Inter
+    fontSize: 36px
+    fontWeight: '700'
+    lineHeight: 44px
+    letterSpacing: -0.02em
+  display-hero-mobile:
+    fontFamily: Inter
+    fontSize: 28px
+    fontWeight: '700'
+    lineHeight: 36px
+    letterSpacing: -0.01em
+  headline-lg:
+    fontFamily: Inter
+    fontSize: 24px
+    fontWeight: '600'
+    lineHeight: 32px
+    letterSpacing: -0.015em
+  headline-md:
+    fontFamily: Inter
+    fontSize: 20px
+    fontWeight: '600'
+    lineHeight: 28px
+    letterSpacing: -0.01em
+  headline-sm:
+    fontFamily: Inter
+    fontSize: 16px
+    fontWeight: '600'
+    lineHeight: 24px
+  body-lg:
+    fontFamily: Inter
+    fontSize: 16px
+    fontWeight: '400'
+    lineHeight: 24px
+  body-md:
+    fontFamily: Inter
+    fontSize: 14px
+    fontWeight: '400'
+    lineHeight: 20px
+  body-sm:
+    fontFamily: Inter
+    fontSize: 13px
+    fontWeight: '400'
+    lineHeight: 18px
+  label-md:
+    fontFamily: Inter
+    fontSize: 12px
+    fontWeight: '500'
+    lineHeight: 16px
+    letterSpacing: 0.01em
+  label-sm:
+    fontFamily: Inter
+    fontSize: 11px
+    fontWeight: '600'
+    lineHeight: 14px
+    letterSpacing: 0.03em
+  metric-tile:
+    fontFamily: Inter
+    fontSize: 32px
+    fontWeight: '700'
+    lineHeight: 38px
+    letterSpacing: -0.02em
+rounded:
+  sm: 0.25rem
+  DEFAULT: 0.5rem
+  md: 0.75rem
+  lg: 1rem
+  xl: 1.5rem
+  full: 9999px
+spacing:
+  gutter: 1.5rem
+  gutter-mobile: 1rem
+  margin: 2rem
+  margin-mobile: 1rem
+  space-xs: 0.25rem
+  space-sm: 0.5rem
+  space-md: 1rem
+  space-lg: 1.5rem
+  space-xl: 2rem
+---
+
+## Brand & Style
+
+This design system delivers a calm, authoritative, and frictionless interface for a multi-stakeholder healthcare management ecosystem. It addresses clinical administrators, practitioners, and patients who demand absolute clarity, rapid scanability, and effortless navigation under high-stress conditions.
+
+The visual style blends modern corporate minimalism with refined clinical ergonomics:
+- **Atmosphere:** Controlled, sterile yet reassuring, surgical in alignment and whitespace distribution.
+- **Hierarchy:** High-density data presentation without cognitive fatigue. Visual weight relies on deliberate contrast rather than ornamental decoration.
+- **Restraint:** Complete avoidance of playful illustrations, skeletal skeuomorphism, or saturated multi-tone gradients. Utility, legibility, and patient safety govern every structural choice.
+
+## Colors
+
+The palette leverages deep navy to convey clinical competence and institutional trust, balanced by an active teal accent reserved for primary operational moments and vital sign visual cues.
+
+### Palette Architecture
+- **Primary Navy (`#123B5D`):** Primary actions, active navigation states, foundational brand presence, and primary iconography.
+- **Teal Accent (`#14B8A6`):** Focal interactive triggers (e.g., "Schedule Consultation", "Start Telehealth Call"), progress metrics, active toggles, and live status badges.
+- **Canvas Base (`#F5F8FC`):** Cool ice-white background creating clear separation against content cards.
+- **Surface Elevation (`#FFFFFF`):** High-clarity white surfaces for data cards, modals, tables, and side sheets.
+- **Text Tiers:**
+  - High Contrast Headings (`#172B4D`): Maximum readability for patient names, diagnoses, and vital metrics.
+  - Secondary Slate (`#64748B`): Timestamps, medical record numbers, supporting captions, and table column headers.
+- **Structure & Hairlines (`#E2E8F0`):** Precise 1px dividers, grid outlines, and table cell separations.
+
+### Semantic Tones
+- **Success / Cleared:** `#10B981` text & border on `#ECFDF5` background.
+- **Warning / Pending Lab:** `#F59E0B` text & border on `#FFFBEB` background.
+- **Destructive / Alert:** `#EF4444` text & border on `#FEF2F2` background.
+- **Info / Telehealth Live:** `#0284C7` text & border on `#F0F9FF` background.
+
+## Typography
+
+The type system is powered entirely by Inter to maintain absolute visual consistency across clinical metrics, dense scheduling grids, and EHR narrative text.
+
+### Implementation Guidelines
+- **Tabular Figures (`tnum`):** Ensure OpenType tabular numbers are enabled for all clinical measurements, timestamps, vital signs, and currency values to maintain alignment in tables and metric arrays.
+- **Uppercase Labels:** Apply `label-sm` with uppercase styling exclusively to section categorizers, status pills, and column keys.
+- **Vertical Rhythm:** Paragraph copy and clinical case histories strictly use `body-md` (14px) with 20px line heights to maintain dense but legible record reading.
+
+## Layout & Spacing
+
+The platform is designed around a responsive 1440px desktop canvas utilizing a 12-column fluid grid.
+
+### Breakpoints & Structure
+- **Desktop (1440px+):** Fixed persistent navigation rail (260px expanded / 72px icon-only), 12-column layout with 24px (`1.5rem`) gutters and 32px (`2rem`) page margins.
+- **Tablet / Clinical Cart (768px – 1024px):** 8-column layout with 16px (`1rem`) gutters and margins; sidebar collapses to an overlay drawer.
+- **Mobile Handheld (320px – 767px):** 4-column layout with 16px (`1rem`) gutters and margins; single-column vertical stack for patient summary cards, metric tiles, and schedules.
+
+### Density & Rhythms
+- Compact 4px base increments control internal component padding (`space-xs` = 4px, `space-sm` = 8px, `space-md` = 16px).
+- Data-heavy panels employ compact vertical padding (8px to 12px) to maximize above-the-fold visibility during triage review.
+
+## Elevation & Depth
+
+Visual separation relies on crisp boundary definitions and low-contrast surface contrast rather than dramatic vertical drop-shadows.
+
+### Structural Levels
+- **Base Canvas (Level 0):** Pure `#F5F8FC` ground plane.
+- **Surface Panels & Metric Cards (Level 1):** `#FFFFFF` background with a mandatory 1px border (`#E2E8F0`) and an ambient, low-diffusion shadow: `0 1px 3px 0 rgba(18, 59, 93, 0.04), 0 1px 2px -1px rgba(18, 59, 93, 0.04)`.
+- **Dropdowns, Popovers & Context Menus (Level 2):** `#FFFFFF` surface with a 1px border (`#E2E8F0`) and focused ambient depth: `0 4px 6px -1px rgba(18, 59, 93, 0.08), 0 2px 4px -2px rgba(18, 59, 93, 0.04)`.
+- **Clinical Modals & Telehealth Drawers (Level 3):** `#FFFFFF` floating layer with deep containment shadow: `0 20px 25px -5px rgba(18, 59, 93, 0.12), 0 8px 10px -6px rgba(18, 59, 93, 0.06)`, anchored over a `#123B5D` backdrop overlay with 35% opacity.
+
+## Shapes
+
+The geometric architecture uses balanced medium rounding to soften clinical formality while sustaining a modern, technical structure.
+
+### Radius System
+- **Cards, Modals & Clinical Panels:** 12px (`0.75rem`) border radius, striking a balance between structure and modern ergonomics.
+- **Interactive Controls (Inputs, Buttons, Dropdowns):** 8px (`0.5rem`) standard radius.
+- **Pills, Badges & Toggles:** 9999px fully rounded boundaries for micro-status indicators, doctor specialization chips, and role tags.
+- **Icon Containers & Metric Badges:** 8px (`0.5rem`) soft square enclosures.
+
+## Components
+
+### Buttons
+- **Primary Action (Navy):** Solid `#123B5D` fill with `#FFFFFF` text. Hover state shifts to `#0D2B44`. Focus ring: 2px offset with `#14B8A6`.
+- **Vibrant Accent CTA (Teal):** Solid `#14B8A6` fill with `#FFFFFF` text. Reserved for primary operational transitions (e.g., "Admit Patient", "Confirm Prescription"). Hover state shifts to `#0D9488`.
+- **Secondary Outlined:** Pure white background, 1px `#E2E8F0` border, `#172B4D` text. Hover shifts background to `#F8FAFC` and border to `#CBD5E1`.
+- **Destructive:** Solid `#EF4444` fill or `#FEF2F2` background with `#EF4444` text for irreversible clinical removals.
+
+### Badges & Status Chips
+- Pill-shaped (`rounded-full`), padded `4px 10px` with `label-sm` uppercase text.
+- **Available / Stable:** `#10B981` text over `#ECFDF5`.
+- **Pending / Lab Review:** `#D97706` text over `#FFFBEB`.
+- **Critical / Emergency:** `#DC2626` text over `#FEF2F2`.
+- **Telehealth / Sync:** `#0284C7` text over `#F0F9FF`.
+
+### Form Fields & Inputs
+- Background `#FFFFFF`, border 1px `#E2E8F0`, corner radius 8px (`0.5rem`).
+- Height: 40px for regular entry; 32px for table-embedded quick filters.
+- **Focus State:** 1px border in `#14B8A6` with an accompanying subtle teal glow: `box-shadow: 0 0 0 3px rgba(20, 184, 166, 0.15)`.
+- Placeholder text in `#94A3B8`.
+
+### Clinical Cards & Metric Tiles
+- Surface: `#FFFFFF` with 12px corner radius, 1px `#E2E8F0` border, and Level 1 ambient shadow.
+- **Metric Tiles:** Feature a 40x40px icon enclosure tinted in primary or teal (10% opacity), a bold 32px tabular numerical reading, a micro sparkline trend indicator, and a secondary comparison delta label.
+
+### Data Tables
+- Header row styled with `#F8FAFC` background, 1px bottom border `#E2E8F0`, and text set to uppercase `label-md` in `#64748B`.
+- Row height: 48px standard, 40px compact.
+- Alternating hover row state using `#F8FAFC`. Active selected row indicated by a 3px vertical accent bar in `#14B8A6` on the far left cell edge.
+
+### Specialty Components
+- **Patient Banner:** Persistent, full-width high-contrast card at the top of medical records detailing allergies (in destructive tags), blood type, DOB, and primary physician.
+- **Vital Sign Sparkline Tracker:** Clean single-stroke SVG line graphs (`#14B8A6` or `#123B5D`) with zero fill gradients, maintaining an ultra-clean clinical review state.
