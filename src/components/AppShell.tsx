@@ -56,6 +56,8 @@ interface AppShellProps {
   onSearchChange: (q: string) => void;
   onQuickBook: () => void;
   onLogout: () => void;
+  isSupabaseConnected?: boolean;
+  databaseProvider?: 'Supabase' | 'Firebase';
   children: React.ReactNode;
 }
 
@@ -75,6 +77,8 @@ export const AppShell: React.FC<AppShellProps> = ({
   onSearchChange,
   onQuickBook,
   onLogout,
+  isSupabaseConnected,
+  databaseProvider,
   children,
 }) => {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -378,6 +382,21 @@ export const AppShell: React.FC<AppShellProps> = ({
 
       {/* Bottom Utility Links */}
       <div className="p-3 border-t border-[#E2E8F0] space-y-1 bg-[#FAFCFF]">
+        <div className="px-3 py-1.5 mb-1 flex items-center justify-between text-[11px] bg-[#F8FAFC] border border-[#E2E8F0] rounded-lg">
+          <span className="font-semibold text-[#002541]">Database</span>
+          <span
+            className={`inline-flex items-center gap-1.5 font-bold ${
+              isSupabaseConnected ? 'text-[#16A34A]' : 'text-[#64748B]'
+            }`}
+          >
+            <span
+              className={`w-1.5 h-1.5 rounded-full ${
+                isSupabaseConnected ? 'bg-[#16A34A] animate-pulse' : 'bg-[#94A3B8]'
+              }`}
+            />
+            {isSupabaseConnected ? 'Supabase (Live)' : 'Firebase / Dev'}
+          </span>
+        </div>
         {role === 'doctor' && (
           <div className="px-3 py-1.5 mb-1 flex items-center justify-between text-[11px] bg-[#F0FDFA] border border-[#CCFBF1] rounded-lg">
             <span className="font-semibold text-[#002541]">FHIR v4 Sync</span>

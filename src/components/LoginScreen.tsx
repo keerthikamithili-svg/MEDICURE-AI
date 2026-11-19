@@ -18,6 +18,8 @@ interface LoginScreenProps {
   onGoogleSignIn: (role: UserRole) => Promise<void>;
   isSigningIn: boolean;
   authError: string | null;
+  isSupabaseConnected?: boolean;
+  databaseProvider?: 'Supabase' | 'Firebase';
 }
 
 const ROLE_OPTIONS: { id: UserRole; label: string; icon: React.ReactNode; hint: string }[] = [
@@ -31,6 +33,8 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
   onGoogleSignIn,
   isSigningIn,
   authError,
+  isSupabaseConnected,
+  databaseProvider,
 }) => {
   const [selectedRole, setSelectedRole] = useState<UserRole>('patient');
   const [emailInput, setEmailInput] = useState('');
@@ -65,9 +69,31 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
           </div>
         </div>
 
-        <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white border border-[#E2E8F0] text-[11px] font-semibold text-[#006B5F] clinical-shadow">
-          <ShieldCheck className="w-3.5 h-3.5" />
-          <span>256-BIT SSL ENCRYPTED</span>
+        <div className="flex items-center gap-2">
+          <div
+            title={
+              isSupabaseConnected
+                ? 'Connected to Supabase PostgreSQL Database'
+                : 'Supabase ready for credentials in .env (VITE_SUPABASE_URL)'
+            }
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-[11px] font-semibold clinical-shadow transition-colors ${
+              isSupabaseConnected
+                ? 'bg-[#F0FDF4] border-[#BBF7D0] text-[#16A34A]'
+                : 'bg-white border-[#E2E8F0] text-[#64748B]'
+            }`}
+          >
+            <span
+              className={`w-2 h-2 rounded-full ${
+                isSupabaseConnected ? 'bg-[#16A34A] animate-pulse' : 'bg-[#94A3B8]'
+              }`}
+            />
+            <span>{isSupabaseConnected ? 'SUPABASE CONNECTED' : 'SUPABASE READY'}</span>
+          </div>
+
+          <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white border border-[#E2E8F0] text-[11px] font-semibold text-[#006B5F] clinical-shadow">
+            <ShieldCheck className="w-3.5 h-3.5" />
+            <span>256-BIT SSL ENCRYPTED</span>
+          </div>
         </div>
       </header>
 

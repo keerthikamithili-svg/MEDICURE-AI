@@ -58,6 +58,8 @@ function MediCureWorkspace() {
     medicalRecords,
     aiMessages,
     dataLoading,
+    isSupabaseConnected,
+    databaseProvider,
     signInWithGoogle,
     logout,
     bookAppointment,
@@ -137,6 +139,8 @@ function MediCureWorkspace() {
         onGoogleSignIn={signInWithGoogle}
         isSigningIn={isSigningIn}
         authError={authError}
+        isSupabaseConnected={isSupabaseConnected}
+        databaseProvider={databaseProvider}
       />
     );
   }
@@ -452,6 +456,8 @@ function MediCureWorkspace() {
       onSearchChange={setSearchQuery}
       onQuickBook={handleQuickBook}
       onLogout={logout}
+      isSupabaseConnected={isSupabaseConnected}
+      databaseProvider={databaseProvider}
     >
       {dataLoading && appointments.length === 0 ? (
         <div className="mb-4 px-4 py-2.5 rounded-xl bg-white border border-[#E2E8F0] text-xs font-medium text-[#64748B]">
