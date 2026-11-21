@@ -11,44 +11,86 @@ import {
   UserCheck,
   ArrowRight,
   Phone,
+  UserPlus,
+  KeyRound,
 } from 'lucide-react';
 import { UserRole } from '../types/medicure';
 
 interface LoginScreenProps {
-  onGoogleSignIn: (role: UserRole) => Promise<void>;
+  onSignIn: (email: string, password: string, role: UserRole) => Promise<void>;
+  onSignUp: (email: string, password: string, displayName: string, role: UserRole) => Promise<void>;
   isSigningIn: boolean;
   authError: string | null;
   isSupabaseConnected?: boolean;
-  databaseProvider?: 'Supabase' | 'Firebase';
 }
 
-const ROLE_OPTIONS: { id: UserRole; label: string; icon: React.ReactNode; hint: string }[] = [
-  { id: 'patient', label: 'Patient', icon: <User className="w-4 h-4" />, hint: 'Primary Patient ID' },
-  { id: 'doctor', label: 'Doctor', icon: <Stethoscope className="w-4 h-4" />, hint: 'NPI / Physician ID' },
-  { id: 'receptionist', label: 'Front Desk', icon: <Building2 className="w-4 h-4" />, hint: 'Desk Operator ID' },
-  { id: 'admin', label: 'Admin', icon: <UserCheck className="w-4 h-4" />, hint: 'Executive Clearance ID' },
+const ROLE_OPTIONS: { id: UserRole; label: string; icon: React.ReactNode; hint: string; defaultEmail: string }[] = [
+  { id: 'patient', label: 'Patient', icon: <User className="w-4 h-4" />, hint: 'Primary Patient Account', defaultEmail: 'patient@medicure.demo' },
+  { id: 'doctor', label: 'Doctor', icon: <Stethoscope className="w-4 h-4" />, hint: 'Physician / NPI Account', defaultEmail: 'dr.sarah@medicure.demo' },
+  { id: 'receptionist', label: 'Front Desk', icon: <Building2 className="w-4 h-4" />, hint: 'Desk Coordinator Account', defaultEmail: 'receptionist@medicure.demo' },
+  { id: 'admin', label: 'Admin', icon: <UserCheck className="w-4 h-4" />, hint: 'Clinical Director Account', defaultEmail: 'admin@medicure.demo' },
 ];
 
 export const LoginScreen: React.FC<LoginScreenProps> = ({
-  onGoogleSignIn,
+  onSignIn,
+  onSignUp,
   isSigningIn,
   authError,
   isSupabaseConnected,
-  databaseProvider,
 }) => {
+  const [authMode, setAuthMode] = useState<'signin' | 'register'>('signin');
   const [selectedRole, setSelectedRole] = useState<UserRole>('patient');
-  const [emailInput, setEmailInput] = useState('');
-  const [passwordInput, setPasswordInput] = useState('');
+  const [displayNameInput, setDisplayNameInput] = useState('');
+  const [emailInput, setEmailInput] = useState('patient@medicure.demo');
+  const [passwordInput, setPasswordInput] = useState('Pass1234!');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberDevice, setRememberDevice] = useState(true);
   const [notice, setNotice] = useState<string | null>(null);
 
   const currentRoleOption = ROLE_OPTIONS.find((r) => r.id === selectedRole) || ROLE_OPTIONS[0];
 
-  const handleCredentialSubmit = async (e: React.FormEvent) => {
+  const handleRoleChange = (role: UserRole) => {
+    setSelectedRole(role);
+    setNotice(null);
+    const target = ROLE_OPTIONS.find((r) => r.id === role);
+    if (target && emailInput.endsWith('@medicure.demo')) {
+      setEmailInput(target.defaultEmail);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setNotice(null);
-    await onGoogleSignIn(selectedRole);
+
+    if (!emailInput.trim() || !passwordInput.trim()) {
+      setNotice('Please provide both your email address and password.');
+      return;
+    }
+
+    if (authMode === 'register' && !displayNameInput.trim()) {
+      setNotice('Please enter your full name for clinical registration.');
+      return;
+    }
+
+    try {
+      if (authMode === 'signin') {
+        await onSignIn(emailInput.trim(), passwordInput, selectedRole);
+      } else {
+        await onSignUp(emailInput.trim(), passwordInput, displayNameInput.trim(), selectedRole);
+        setNotice('Registration successful! Connecting to your secure clinical dashboard...');
+      }
+    } catch {
+      // Error is tracked in authError prop from useMediCureData
+    }
+  };
+
+  const handleQuickDemoFill = (role: UserRole) => {
+    handleRoleChange(role);
+    const target = ROLE_OPTIONS.find((r) => r.id === role);
+    if (target) {
+      setEmailInput(target.defaultEmail);
+      setPasswordInput('Pass1234!');
+    }
   };
 
   return (
@@ -73,7 +115,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
           <div
             title={
               isSupabaseConnected
-                ? 'Connected to Supabase PostgreSQL Database'
+                ? 'Connected to Supabase PostgreSQL Database & Auth'
                 : 'Supabase ready for credentials in .env (VITE_SUPABASE_URL)'
             }
             className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-[11px] font-semibold clinical-shadow transition-colors ${
@@ -114,20 +156,54 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
               <div className="flex items-center gap-2 mb-1">
                 <h1 className="font-display text-xl font-bold text-[#002541]">MediCure</h1>
                 <span className="px-2 py-0.5 rounded bg-[#EFF4FF] text-[#006B5F] text-[10px] font-bold tracking-wider">
-                  PORTAL GATEWAY
+                  CLINICAL GATEWAY
                 </span>
               </div>
-              <p className="text-xs text-[#64748B] mb-4">Your Health. Your Time. Our Care.</p>
+              <p className="text-xs text-[#64748B] mb-3">Your Health. Your Time. Our Care.</p>
 
               <h2 className="font-display text-lg font-bold text-[#0B1C30]">
-                Sign in to MediCure
+                {authMode === 'signin' ? 'Sign in to MediCure' : 'Create MediCure Account'}
               </h2>
               <p className="text-xs text-[#64748B] mt-1">
-                Select your user role to access your dedicated healthcare portal.
+                {authMode === 'signin'
+                  ? 'Select your role and authenticate with Supabase credentials.'
+                  : 'Enter your clinical details to register a new account.'}
               </p>
             </div>
 
-            {/* Role Selector Tabs */}
+            {/* Mode Switcher (Sign In vs Register) */}
+            <div className="flex rounded-lg bg-[#F1F5F9] p-1 mb-5 text-xs font-semibold">
+              <button
+                type="button"
+                onClick={() => {
+                  setAuthMode('signin');
+                  setNotice(null);
+                }}
+                className={`flex-1 py-1.5 rounded-md transition-all cursor-pointer ${
+                  authMode === 'signin'
+                    ? 'bg-white text-[#002541] shadow-xs'
+                    : 'text-[#64748B] hover:text-[#002541]'
+                }`}
+              >
+                Sign In
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setAuthMode('register');
+                  setNotice(null);
+                }}
+                className={`flex-1 py-1.5 rounded-md transition-all cursor-pointer ${
+                  authMode === 'register'
+                    ? 'bg-white text-[#002541] shadow-xs'
+                    : 'text-[#64748B] hover:text-[#002541]'
+                }`}
+              >
+                Register New Account
+              </button>
+            </div>
+
+            {/* Role Selector Tabs (Patient, Doctor, Front Desk, Admin) */}
             <div className="grid grid-cols-4 gap-1.5 p-1 bg-[#F1F5F9] rounded-xl mb-5">
               {ROLE_OPTIONS.map((role) => {
                 const active = selectedRole === role.id;
@@ -135,7 +211,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
                   <button
                     key={role.id}
                     type="button"
-                    onClick={() => setSelectedRole(role.id)}
+                    onClick={() => handleRoleChange(role.id)}
                     className={`flex items-center justify-center gap-1.5 py-2 px-2 rounded-lg text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
                       active
                         ? 'bg-[#002541] text-white shadow-xs'
@@ -149,69 +225,80 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
               })}
             </div>
 
-            {/* Google Sign-In Button */}
-            <button
-              type="button"
-              onClick={() => onGoogleSignIn(selectedRole)}
-              disabled={isSigningIn}
-              className="w-full flex items-center justify-center gap-2.5 h-10 px-4 bg-white border border-[#E2E8F0] rounded-lg text-sm font-semibold text-[#0B1C30] hover:bg-[#F8FAFC] hover:border-[#CBD5E1] transition-colors cursor-pointer disabled:opacity-60"
-            >
-              <svg className="w-4 h-4" viewBox="0 0 24 24" aria-hidden="true">
-                <path
-                  fill="#4285F4"
-                  d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17Z"
-                />
-                <path
-                  fill="#34A853"
-                  d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.11-6.72-4.96H1.29v3.14C3.26 21.3 7.31 24 12 24Z"
-                />
-                <path
-                  fill="#FBBC05"
-                  d="M5.28 14.24c-.24-.72-.38-1.49-.38-2.24s.14-1.52.38-2.24V6.62H1.29C.47 8.24 0 10.06 0 12s.47 3.76 1.29 5.38l3.99-3.14Z"
-                />
-                <path
-                  fill="#EA4335"
-                  d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.31 0 3.26 2.7 1.29 6.62l3.99 3.14c.95-2.85 3.6-4.96 6.72-4.96Z"
-                />
-              </svg>
-              <span>{isSigningIn ? 'Connecting to MediCure SSO...' : 'Continue with Google'}</span>
-            </button>
-
-            <div className="relative my-5 flex items-center justify-center">
-              <div className="border-t border-[#E2E8F0] w-full" />
-              <span className="bg-white px-3 text-[10px] font-semibold tracking-wider text-[#64748B] uppercase whitespace-nowrap">
-                OR SIGN IN WITH CREDENTIALS
-              </span>
-              <div className="border-t border-[#E2E8F0] w-full" />
+            {/* Quick Demo Pre-fill Pills */}
+            <div className="mb-4 p-2.5 bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl">
+              <div className="text-[10px] font-bold text-[#64748B] uppercase tracking-wider mb-1.5 flex items-center justify-between">
+                <span>Demo Fast-Fill:</span>
+                <span className="text-[#006B5F] font-semibold">Pass: Pass1234!</span>
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {ROLE_OPTIONS.map((role) => (
+                  <button
+                    key={role.id}
+                    type="button"
+                    onClick={() => handleQuickDemoFill(role.id)}
+                    className={`px-2 py-1 rounded text-[11px] font-medium border transition-colors cursor-pointer ${
+                      selectedRole === role.id
+                        ? 'bg-[#002541] text-white border-[#002541]'
+                        : 'bg-white text-[#42474E] border-[#E2E8F0] hover:border-[#CBD5E1]'
+                    }`}
+                  >
+                    {role.label}
+                  </button>
+                ))}
+              </div>
             </div>
 
+            {/* Error Message */}
             {authError && (
               <div className="mb-4 p-3 rounded-lg bg-[#FEF2F2] border border-[#FECACA] text-xs text-[#DC2626]">
                 {authError}
               </div>
             )}
 
+            {/* Notice / Feedback Message */}
             {notice && (
               <div className="mb-4 p-3 rounded-lg bg-[#F0F9FF] border border-[#BAE6FD] text-xs text-[#0284C7]">
                 {notice}
               </div>
             )}
 
-            <form onSubmit={handleCredentialSubmit} className="space-y-4">
+            {/* Credentials Form */}
+            <form onSubmit={handleSubmit} className="space-y-4">
+              {authMode === 'register' && (
+                <div>
+                  <label className="block text-xs font-semibold text-[#0B1C30] mb-1.5">
+                    Full Legal Name
+                  </label>
+                  <div className="relative">
+                    <UserPlus className="w-4 h-4 text-[#94A3B8] absolute left-3 top-1/2 -translate-y-1/2" />
+                    <input
+                      type="text"
+                      required
+                      value={displayNameInput}
+                      onChange={(e) => setDisplayNameInput(e.target.value)}
+                      placeholder="e.g. Eleanor Vance"
+                      className="w-full h-10 pl-9 pr-3 bg-[#F8FAFC] border border-[#E2E8F0] rounded-lg text-sm text-[#0B1C30] placeholder:text-[#94A3B8] focus:outline-none focus:border-[#14B8A6] focus:bg-white transition-colors"
+                    />
+                  </div>
+                </div>
+              )}
+
               <div>
                 <div className="flex items-center justify-between mb-1.5">
                   <label className="text-xs font-semibold text-[#0B1C30]">
-                    Email Address or Medical Record Phone
+                    Email Address
                   </label>
                   <span className="text-[11px] text-[#64748B]">{currentRoleOption.hint}</span>
                 </div>
                 <div className="relative">
                   <Mail className="w-4 h-4 text-[#94A3B8] absolute left-3 top-1/2 -translate-y-1/2" />
                   <input
-                    type="text"
+                    type="email"
+                    required
                     value={emailInput}
                     onChange={(e) => setEmailInput(e.target.value)}
-                    placeholder="e.g. sarah.jenkins@example.com or (555) 019-2834"
+                    placeholder="e.g. user@medicure-health.org"
                     className="w-full h-10 pl-9 pr-3 bg-[#F8FAFC] border border-[#E2E8F0] rounded-lg text-sm text-[#0B1C30] placeholder:text-[#94A3B8] focus:outline-none focus:border-[#14B8A6] focus:bg-white transition-colors"
                   />
                 </div>
@@ -225,6 +312,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
                   <Lock className="w-4 h-4 text-[#94A3B8] absolute left-3 top-1/2 -translate-y-1/2" />
                   <input
                     type={showPassword ? 'text' : 'password'}
+                    required
                     value={passwordInput}
                     onChange={(e) => setPasswordInput(e.target.value)}
                     placeholder="Enter your account password"
@@ -241,53 +329,80 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
                 </div>
               </div>
 
-              <div className="flex items-center justify-between text-xs">
-                <label className="inline-flex items-center gap-2 text-[#42474E] cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={rememberDevice}
-                    onChange={(e) => setRememberDevice(e.target.checked)}
-                    className="rounded border-[#CBD5E1] text-[#006B5F] focus:ring-[#14B8A6]"
-                  />
-                  <span>Remember me on this device</span>
-                </label>
-                <button
-                  type="button"
-                  onClick={() =>
-                    setNotice(
-                      'MediCure uses verified Google Workspace / Identity SSO for clinical security. Click Continue with Google to access your portal.'
-                    )
-                  }
-                  className="font-semibold text-[#002541] hover:underline cursor-pointer"
-                >
-                  Forgot Password?
-                </button>
-              </div>
+              {authMode === 'signin' && (
+                <div className="flex items-center justify-between text-xs">
+                  <label className="inline-flex items-center gap-2 text-[#42474E] cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={rememberDevice}
+                      onChange={(e) => setRememberDevice(e.target.checked)}
+                      className="rounded border-[#CBD5E1] text-[#006B5F] focus:ring-[#14B8A6]"
+                    />
+                    <span>Remember this device</span>
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setNotice('Please contact your hospital IT administrator to reset your credentials.')
+                    }
+                    className="font-semibold text-[#002541] hover:underline cursor-pointer"
+                  >
+                    Forgot Password?
+                  </button>
+                </div>
+              )}
 
               <button
                 type="submit"
                 disabled={isSigningIn}
                 className="w-full h-11 bg-[#002541] hover:bg-[#123B5D] text-white rounded-lg text-sm font-semibold inline-flex items-center justify-center gap-2 transition-colors cursor-pointer disabled:opacity-60"
               >
-                <span>Sign In as {currentRoleOption.label}</span>
+                <span>
+                  {isSigningIn
+                    ? 'Authenticating with Supabase...'
+                    : authMode === 'signin'
+                    ? `Sign In as ${currentRoleOption.label}`
+                    : `Create ${currentRoleOption.label} Account`}
+                </span>
                 <ArrowRight className="w-4 h-4" />
               </button>
             </form>
 
             <div className="mt-5 pt-4 border-t border-[#E2E8F0] text-center space-y-2">
               <p className="text-xs text-[#64748B]">
-                New patient or family dependent?{' '}
-                <button
-                  type="button"
-                  onClick={() => onGoogleSignIn('patient')}
-                  className="font-semibold text-[#006B5F] hover:underline cursor-pointer"
-                >
-                  Create a patient account
-                </button>
+                {authMode === 'signin' ? (
+                  <>
+                    New patient or staff member?{' '}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setAuthMode('register');
+                        setNotice(null);
+                      }}
+                      className="font-semibold text-[#006B5F] hover:underline cursor-pointer"
+                    >
+                      Register here
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    Already have a MediCure account?{' '}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setAuthMode('signin');
+                        setNotice(null);
+                      }}
+                      className="font-semibold text-[#006B5F] hover:underline cursor-pointer"
+                    >
+                      Sign In
+                    </button>
+                  </>
+                )}
               </p>
               <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#F0FDFA] border border-[#CCFBF1] text-[11px] font-medium text-[#006B5F]">
-                <Lock className="w-3 h-3" />
-                <span>Encrypted with 256-bit SSL &amp; HIPAA Patient Identity Standard</span>
+                <KeyRound className="w-3 h-3" />
+                <span>Supabase PostgreSQL Auth • 256-bit SSL HIPAA Compliant</span>
               </div>
             </div>
           </div>

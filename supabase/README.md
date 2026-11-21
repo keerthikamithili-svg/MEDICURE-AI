@@ -75,4 +75,4 @@ Any modification made—whether an appointment booked by a patient, a prescripti
 ---
 
 ## 🛡️ Fallback Resilience
-If Supabase keys are not configured or the network is offline, the application seamlessly runs using local seed state and Firebase compatibility mode so developers and reviewers can test without interruptions.
+If Supabase credentials are being configured, the application provides diagnostic feedback and resilient clinical guidance so developers and clinical reviewers can test seamlessly without interruptions.

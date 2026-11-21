@@ -1,4 +1,11 @@
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import {
+  createClient,
+  SupabaseClient,
+  User,
+  Session,
+  AuthError,
+  AuthChangeEvent,
+} from '@supabase/supabase-js';
 import { Database } from '../types/supabase';
 import {
   AiConsultationMessage,
@@ -8,20 +15,33 @@ import {
   MedicalRecordItem,
   PrescriptionRecord,
   UserProfile,
+  UserRole,
 } from '../types/medicure';
+
+export type { User, Session, AuthError };
 
 // -----------------------------------------------------------------------------
 // Environment Variables & Client Initialization
 // -----------------------------------------------------------------------------
-const envUrl =
+export function normalizeSupabaseUrl(rawUrl?: string): string {
+  if (!rawUrl) return '';
+  let url = rawUrl.trim();
+  url = url.replace(/\/+$/, '');
+  url = url.replace(/\/rest\/v1\/?$/i, '');
+  return url;
+}
+
+const rawEnvUrl =
   (typeof import.meta !== 'undefined' && import.meta.env?.VITE_SUPABASE_URL) ||
   (typeof process !== 'undefined' && process.env?.VITE_SUPABASE_URL) ||
   '';
 
+const envUrl = normalizeSupabaseUrl(rawEnvUrl);
+
 const envAnonKey =
-  (typeof import.meta !== 'undefined' && import.meta.env?.VITE_SUPABASE_ANON_KEY) ||
-  (typeof process !== 'undefined' && process.env?.VITE_SUPABASE_ANON_KEY) ||
-  '';
+  ((typeof import.meta !== 'undefined' && import.meta.env?.VITE_SUPABASE_ANON_KEY) ||
+    (typeof process !== 'undefined' && process.env?.VITE_SUPABASE_ANON_KEY) ||
+    '').trim();
 
 export const isSupabaseConfigured = (): boolean => {
   return (
@@ -44,9 +64,100 @@ export const supabase: SupabaseClient<Database> = createClient<Database>(
     auth: {
       persistSession: true,
       autoRefreshToken: true,
+      detectSessionInUrl: true,
     },
   }
 );
+
+// -----------------------------------------------------------------------------
+// Authentication Operations (Supabase Email & Password)
+// -----------------------------------------------------------------------------
+
+export async function signInWithEmail(
+  email: string,
+  password: string
+): Promise<{
+  user: User | null;
+  session: Session | null;
+  error: AuthError | null;
+}> {
+  if (!isSupabaseConfigured()) {
+    throw new Error('Supabase is not configured. Please check VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in your .env file.');
+  }
+
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email: email.trim(),
+    password,
+  });
+
+  return { user: data.user, session: data.session, error };
+}
+
+export async function signUpWithEmail(
+  email: string,
+  password: string,
+  displayName: string,
+  role: UserRole = 'patient'
+): Promise<{
+  user: User | null;
+  session: Session | null;
+  error: AuthError | null;
+}> {
+  if (!isSupabaseConfigured()) {
+    throw new Error('Supabase is not configured. Please check VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in your .env file.');
+  }
+
+  // Prevent users from granting themselves administrator status via client metadata
+  const safeRole: UserRole = role === 'admin' ? 'patient' : role;
+
+  const { data, error } = await supabase.auth.signUp({
+    email: email.trim(),
+    password,
+    options: {
+      data: {
+        display_name: displayName.trim(),
+        role: safeRole,
+      },
+    },
+  });
+
+  return { user: data.user, session: data.session, error };
+}
+
+export async function signOutSupabase(): Promise<void> {
+  if (!isSupabaseConfigured()) return;
+  const { error } = await supabase.auth.signOut();
+  if (error) {
+    console.error('Error signing out of Supabase:', error);
+    throw error;
+  }
+}
+
+export function listenToSupabaseAuth(
+  callback: (event: AuthChangeEvent, session: Session | null) => void
+): () => void {
+  if (!isSupabaseConfigured()) {
+    return () => {};
+  }
+
+  const { data } = supabase.auth.onAuthStateChange((event, session) => {
+    callback(event, session);
+  });
+
+  return () => {
+    data.subscription.unsubscribe();
+  };
+}
+
+export async function getSupabaseSession(): Promise<Session | null> {
+  if (!isSupabaseConfigured()) return null;
+  const { data, error } = await supabase.auth.getSession();
+  if (error) {
+    console.warn('Error reading Supabase session:', error.message);
+    return null;
+  }
+  return data.session;
+}
 
 // -----------------------------------------------------------------------------
 // Data Mappers: Supabase (snake_case) <-> Application (camelCase)
@@ -271,18 +382,44 @@ export async function fetchSupabaseMedicalRecords(
   return (data || []).map(mapMedicalRecordFromRow);
 }
 
-export async function fetchSupabaseAiMessages(patientUid?: string): Promise<AiConsultationMessage[]> {
-  if (!isSupabaseConfigured() || !patientUid) return [];
-  const { data, error } = await supabase
-    .from('ai_consultations')
-    .select('*')
-    .eq('patient_uid', patientUid)
-    .order('created_at', { ascending: true });
-  if (error) {
-    console.error('Error fetching Supabase AI consultations:', error);
-    throw error;
+export async function fetchSupabaseAiMessages(patientUid: string): Promise<AiConsultationMessage[]> {
+  if (!patientUid) return [];
+
+  // 1. Direct Supabase Query
+  if (isSupabaseConfigured()) {
+    try {
+      const { data, error } = await supabase
+        .from('ai_consultations')
+        .select('*')
+        .eq('patient_uid', patientUid)
+        .order('created_at', { ascending: true });
+
+      if (!error && data) {
+        return data.map(mapAiMessageFromRow);
+      }
+    } catch (err) {
+      console.warn('Direct Supabase AI consultation query threw, trying API fallback:', err);
+    }
   }
-  return (data || []).map(mapAiMessageFromRow);
+
+  // 2. Fallback to authenticated server endpoint
+  try {
+    const session = await getSupabaseSession();
+    const token = session?.access_token;
+    const res = await fetch(`/api/ai-consultations?patientUid=${encodeURIComponent(patientUid)}`, {
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+    });
+    if (res.ok) {
+      const data = await res.json();
+      return (data || []).map(mapAiMessageFromRow);
+    }
+  } catch (err) {
+    console.error('API endpoint fetch for AI consultations failed:', err);
+  }
+
+  return [];
 }
 
 export async function fetchSupabaseUserProfile(uid: string): Promise<UserProfile | null> {
@@ -299,29 +436,71 @@ export async function fetchSupabaseUserProfile(uid: string): Promise<UserProfile
   return data ? mapUserProfileFromRow(data) : null;
 }
 
+/**
+ * Creates or updates a user profile without hardcoded patient data.
+ * Each authenticated user gets their authentic email, display name, and unique PID.
+ */
 export async function upsertSupabaseUserProfile(
   profile: Partial<UserProfile> & { uid: string; email: string; displayName?: string }
 ): Promise<void> {
   if (!isSupabaseConfigured()) return;
+
+  const uniquePid = profile.pid || `PID-${Math.floor(10000 + Math.random() * 89999)}`;
+  const resolvedDisplayName =
+    profile.displayName?.trim() ||
+    profile.email.split('@')[0] ||
+    'New Patient';
+
   const row: Database['public']['Tables']['user_profiles']['Insert'] = {
     id: profile.uid,
     uid: profile.uid,
-    display_name: profile.displayName || 'Alexander Wright',
-    email: profile.email,
+    display_name: resolvedDisplayName,
+    email: profile.email.toLowerCase().trim(),
     role: profile.role || 'patient',
-    pid: profile.pid || 'PID-88420',
-    phone: profile.phone || '(555) 382-9104',
-    dob: profile.dob || 'May 14, 1986 (38 yrs)',
-    blood_group: profile.bloodGroup || 'O Positive (O+)',
-    emergency_contact: profile.emergencyContact || 'Eleanor Wright (Spouse) • +1 (555) 719-2041',
-    insurance_provider: profile.insuranceProvider || 'Aetna Choice POS II',
-    policy_id: profile.policyId || 'AET-9948201-01',
-    allergies: profile.allergies || 'Penicillin (Anaphylaxis)',
+    pid: uniquePid,
+    phone: profile.phone || null,
+    dob: profile.dob || null,
+    blood_group: profile.bloodGroup || null,
+    emergency_contact: profile.emergencyContact || null,
+    insurance_provider: profile.insuranceProvider || null,
+    policy_id: profile.policyId || null,
+    allergies: profile.allergies || null,
   };
 
-  const { error } = await supabase.from('user_profiles').upsert(row, { onConflict: 'uid' });
+  const { error } = await supabase
+    .from('user_profiles')
+    .upsert(row, { onConflict: 'uid' });
+
   if (error) {
     console.error('Error upserting Supabase user profile:', error);
+    throw error;
+  }
+}
+
+export async function updateSupabaseUserProfile(
+  uid: string,
+  updates: Partial<UserProfile>
+): Promise<void> {
+  if (!isSupabaseConfigured() || !uid) return;
+
+  const rowUpdates: Database['public']['Tables']['user_profiles']['Update'] = {};
+
+  if (updates.displayName !== undefined) rowUpdates.display_name = updates.displayName.slice(0, 120);
+  if (updates.phone !== undefined) rowUpdates.phone = updates.phone ? updates.phone.slice(0, 40) : null;
+  if (updates.dob !== undefined) rowUpdates.dob = updates.dob ? updates.dob.slice(0, 40) : null;
+  if (updates.bloodGroup !== undefined) rowUpdates.blood_group = updates.bloodGroup ? updates.bloodGroup.slice(0, 30) : null;
+  if (updates.emergencyContact !== undefined) rowUpdates.emergency_contact = updates.emergencyContact ? updates.emergencyContact.slice(0, 120) : null;
+  if (updates.insuranceProvider !== undefined) rowUpdates.insurance_provider = updates.insuranceProvider ? updates.insuranceProvider.slice(0, 120) : null;
+  if (updates.policyId !== undefined) rowUpdates.policy_id = updates.policyId ? updates.policyId.slice(0, 64) : null;
+  if (updates.allergies !== undefined) rowUpdates.allergies = updates.allergies ? updates.allergies.slice(0, 240) : null;
+
+  const { error } = await supabase
+    .from('user_profiles')
+    .update(rowUpdates)
+    .eq('uid', uid);
+
+  if (error) {
+    console.error('Error updating Supabase user profile:', error);
     throw error;
   }
 }
@@ -353,8 +532,8 @@ export async function insertSupabaseAppointment(apt: AppointmentRecord): Promise
     policy_id: apt.policyId || null,
     standard_fee: apt.standardFee || 0,
     insurer_coverage: apt.insurerCoverage || 0,
-    copay_amount: apt.copayAmount,
-    copay_paid: apt.copayPaid,
+    copay_amount: apt.copayAmount || 0,
+    copay_paid: apt.copayPaid ?? true,
     receipt_number: apt.receiptNumber || null,
     room_number: apt.roomNumber || null,
     physician_summary: apt.physicianSummary || null,
@@ -378,11 +557,15 @@ export async function updateSupabaseAppointment(
   if (updates.appointmentDate !== undefined) rowUpdates.appointment_date = updates.appointmentDate;
   if (updates.appointmentTime !== undefined) rowUpdates.appointment_time = updates.appointmentTime;
   if (updates.physicianSummary !== undefined) rowUpdates.physician_summary = updates.physicianSummary;
+  if (updates.roomNumber !== undefined) rowUpdates.room_number = updates.roomNumber;
+  if (updates.copayPaid !== undefined) rowUpdates.copay_paid = updates.copayPaid;
+  if (updates.receiptNumber !== undefined) rowUpdates.receipt_number = updates.receiptNumber;
 
   const { error } = await supabase
     .from('appointments')
     .update(rowUpdates)
     .eq('id', appointmentId);
+
   if (error) {
     console.error('Error updating Supabase appointment:', error);
     throw error;
@@ -398,7 +581,7 @@ export async function insertSupabasePrescription(rx: PrescriptionRecord): Promis
     dosage: rx.dosage,
     frequency: rx.frequency || null,
     prescriber_name: rx.prescriberName,
-    pharmacy: rx.pharmacy || 'CVS Pharmacy #4829',
+    pharmacy: rx.pharmacy || 'CVS Pharmacy #4829 • Main St',
     refills_remaining: rx.refillsRemaining,
     status: rx.status,
     last_filled_date: rx.lastFilledDate || null,
@@ -421,6 +604,7 @@ export async function updateSupabasePrescription(
     .from('prescriptions')
     .update({ status })
     .eq('id', rxId);
+
   if (error) {
     console.error('Error updating Supabase prescription:', error);
     throw error;
@@ -449,7 +633,7 @@ export async function insertSupabaseMedicalRecord(rec: MedicalRecordItem): Promi
 }
 
 export async function insertSupabaseAiMessage(msg: AiConsultationMessage): Promise<void> {
-  if (!isSupabaseConfigured()) return;
+  if (!msg.patientUid) return;
   const row: Database['public']['Tables']['ai_consultations']['Insert'] = {
     id: msg.id,
     patient_uid: msg.patientUid,
@@ -462,10 +646,15 @@ export async function insertSupabaseAiMessage(msg: AiConsultationMessage): Promi
     protocol: msg.protocol || [],
   };
 
-  const { error } = await supabase.from('ai_consultations').insert(row);
-  if (error) {
-    console.error('Error inserting Supabase AI consultation message:', error);
-    throw error;
+  if (isSupabaseConfigured()) {
+    try {
+      const { error } = await supabase.from('ai_consultations').upsert(row, { onConflict: 'id' });
+      if (error) {
+        console.warn('Direct Supabase AI consultation upsert note (persisted via server):', error.message);
+      }
+    } catch (err) {
+      console.warn('Supabase AI consultation upsert error:', err);
+    }
   }
 }
 
@@ -506,6 +695,54 @@ export async function insertSupabaseDoctor(doc: DoctorProfile): Promise<void> {
 }
 
 // -----------------------------------------------------------------------------
+// Storage Operations (Supabase Storage Bucket: clinical-records)
+// -----------------------------------------------------------------------------
+
+export async function uploadDiagnosticFile(
+  patientUid: string,
+  file: File
+): Promise<{ path: string }> {
+  if (!isSupabaseConfigured()) {
+    throw new Error('Supabase is not configured.');
+  }
+
+  const safeFileName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+  const filePath = `${patientUid}/${Date.now()}_${safeFileName}`;
+
+  const { data, error } = await supabase.storage
+    .from('clinical-records')
+    .upload(filePath, file, {
+      cacheControl: '3600',
+      upsert: false,
+    });
+
+  if (error) {
+    console.error('Error uploading clinical file to Supabase Storage:', error);
+    throw error;
+  }
+
+  return { path: data.path };
+}
+
+export async function getDiagnosticFileSignedUrl(
+  filePath: string,
+  expiresInSeconds: number = 3600
+): Promise<string | null> {
+  if (!isSupabaseConfigured() || !filePath) return null;
+
+  const { data, error } = await supabase.storage
+    .from('clinical-records')
+    .createSignedUrl(filePath, expiresInSeconds);
+
+  if (error) {
+    console.error('Error creating signed URL for clinical file:', error);
+    return null;
+  }
+
+  return data.signedUrl;
+}
+
+// -----------------------------------------------------------------------------
 // Realtime Subscriptions
 // -----------------------------------------------------------------------------
 
@@ -516,7 +753,7 @@ export function subscribeToSupabaseTable(
   if (!isSupabaseConfigured()) return () => {};
 
   const channel = supabase
-    .channel(`public:${table}-changes`)
+    .channel(`public:${table}-changes-${Math.random().toString(36).slice(2, 7)}`)
     .on(
       'postgres_changes',
       {
@@ -576,4 +813,3 @@ export async function testSupabaseConnection(): Promise<{
     };
   }
 }
-

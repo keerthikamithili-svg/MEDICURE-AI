@@ -47,7 +47,7 @@ export const AiAssistantView: React.FC<AiAssistantViewProps> = ({
   const [sending, setSending] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  const firstName = (userProfile?.displayName || 'Alexander').split(' ')[0];
+  const firstName = (userProfile?.displayName || 'Patient').split(' ')[0];
 
   const handleSend = async (textToSend?: string) => {
     const query = (textToSend ?? input).trim();

@@ -78,7 +78,7 @@ export const AdminPortalView: React.FC<AdminPortalViewProps> = ({
       setDocError(
         err instanceof Error
           ? err.message
-          : 'Admin privileges required in Firestore rules to add new physicians.'
+          : 'Admin privileges required in Supabase security policies to add new physicians.'
       );
     }
   };
@@ -520,7 +520,7 @@ export const AdminPortalView: React.FC<AdminPortalViewProps> = ({
 
             {!isAdmin && (
               <div className="p-2.5 rounded-lg bg-[#FFFBEB] border border-[#FDE68A] text-[#92400E]">
-                Note: Firestore security rules restrict creating new physician records to verified Admin accounts.
+                Note: Supabase security policies restrict creating new physician records to verified Admin accounts.
               </div>
             )}
 

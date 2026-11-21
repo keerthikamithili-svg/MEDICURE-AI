@@ -57,7 +57,7 @@ interface AppShellProps {
   onQuickBook: () => void;
   onLogout: () => void;
   isSupabaseConnected?: boolean;
-  databaseProvider?: 'Supabase' | 'Firebase';
+  databaseProvider?: string;
   children: React.ReactNode;
 }
 
@@ -394,7 +394,7 @@ export const AppShell: React.FC<AppShellProps> = ({
                 isSupabaseConnected ? 'bg-[#16A34A] animate-pulse' : 'bg-[#94A3B8]'
               }`}
             />
-            {isSupabaseConnected ? 'Supabase (Live)' : 'Firebase / Dev'}
+            {isSupabaseConnected ? 'Supabase (Live)' : 'Supabase (Connecting)'}
           </span>
         </div>
         {role === 'doctor' && (

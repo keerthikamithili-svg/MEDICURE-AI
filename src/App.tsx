@@ -60,7 +60,8 @@ function MediCureWorkspace() {
     dataLoading,
     isSupabaseConnected,
     databaseProvider,
-    signInWithGoogle,
+    signInWithEmailAddress,
+    registerWithEmail,
     logout,
     bookAppointment,
     cancelAppointment,
@@ -136,11 +137,11 @@ function MediCureWorkspace() {
   if (!authUser) {
     return (
       <LoginScreen
-        onGoogleSignIn={signInWithGoogle}
+        onSignIn={signInWithEmailAddress}
+        onSignUp={registerWithEmail}
         isSigningIn={isSigningIn}
         authError={authError}
         isSupabaseConnected={isSupabaseConnected}
-        databaseProvider={databaseProvider}
       />
     );
   }
